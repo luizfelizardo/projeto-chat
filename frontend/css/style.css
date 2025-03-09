@@ -195,7 +195,5 @@ body {
 
 .chat__input {
     border: none;
-    padding: 15px;
-    border-radius: 8px;
-    flex-grow: 1;
-}
+    padding: 10px;
+}    
