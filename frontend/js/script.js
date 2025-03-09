@@ -1,13 +1,14 @@
 // login elements
-const login = document.querySelector(".login")
-const loginForm = login.querySelector(".login__form")
-const loginInput = login.querySelector(".login__input")
+const login = document.querySelector(".login");
+const loginForm = login.querySelector(".login__form");
+const loginInput = login.querySelector(".login__input");
 
 // chat elements
-const chat = document.querySelector(".chat")
-const chatForm = chat.querySelector(".chat__form")
-const chatInput = chat.querySelector(".chat__input")
-const chatMessages = chat.querySelector(".chat__messages")
+const chat = document.querySelector(".chat");
+const chatForm = chat.querySelector(".chat__form");
+const chatInput = chat.querySelector(".chat__input");
+const chatMessages = chat.querySelector(".chat__messages");
+const sairChatButton = document.querySelector("#sair-chat");
 
 const colors = [
     "cadetblue",
@@ -15,92 +16,124 @@ const colors = [
     "cornflowerblue",
     "darkkhaki",
     "hotpink",
-    "gold"
-]
+    "gold",
+];
 
-const user = { id: "", name: "", color: "" }
+const user = { id: "", name: "", color: "" };
 
-let websocket
+let websocket;
 
 const createMessageSelfElement = (content) => {
-    const div = document.createElement("div")
+    const div = document.createElement("div");
 
-    div.classList.add("message--self")
-    div.innerHTML = content
+    div.classList.add("message--self");
+    div.innerHTML = content;
 
-    return div
-}
+    return div;
+};
 
 const createMessageOtherElement = (content, sender, senderColor) => {
-    const div = document.createElement("div")
-    const span = document.createElement("span")
+    const div = document.createElement("div");
+    const span = document.createElement("span");
 
-    div.classList.add("message--other")
+    div.classList.add("message--other");
 
-    span.classList.add("message--sender")
-    span.style.color = senderColor
+    span.classList.add("message--sender");
+    span.style.color = senderColor;
 
-    div.appendChild(span)
+    div.appendChild(span);
 
-    span.innerHTML = sender
-    div.innerHTML += content
+    span.innerHTML = sender;
+    div.innerHTML += content;
 
-    return div
-}
+    return div;
+};
+
+const createMessageElement = (content) => {
+    const div = document.createElement("div");
+    div.textContent = content;
+    return div;
+};
 
 const getRandomColor = () => {
-    const randomIndex = Math.floor(Math.random() * colors.length)
-    return colors[randomIndex]
-}
+    const randomIndex = Math.floor(Math.random() * colors.length);
+    return colors[randomIndex];
+};
 
 const scrollScreen = () => {
     window.scrollTo({
         top: document.body.scrollHeight,
-        behavior: "smooth"
-    })
-}
+        behavior: "smooth",
+    });
+};
 
 const processMessage = ({ data }) => {
-    const { userId, userName, userColor, content } = JSON.parse(data)
+    const { userId, userName, userColor, content } = JSON.parse(data);
 
     const message =
         userId == user.id
             ? createMessageSelfElement(content)
-            : createMessageOtherElement(content, userName, userColor)
+            : createMessageOtherElement(content, userName, userColor);
 
-    chatMessages.appendChild(message)
+    chatMessages.appendChild(message);
 
-    scrollScreen()
-}
+    scrollScreen();
+};
 
 const handleLogin = (event) => {
-    event.preventDefault()
+    event.preventDefault();
 
-    user.id = crypto.randomUUID()
-    user.name = loginInput.value
-    user.color = getRandomColor()
+    user.id = crypto.randomUUID();
+    user.name = loginInput.value;
+    user.color = getRandomColor();
 
-    login.style.display = "none"
-    chat.style.display = "flex"
+    login.style.display = "none";
+    chat.style.display = "flex";
 
-    websocket = new WebSocket("wss://projeto-chat-jq7k.onrender.com")
-    websocket.onmessage = processMessage
-}
+    websocket = new WebSocket("wss://projeto-chat-jq7k.onrender.com");
+    websocket.onmessage = processMessage;
+};
 
 const sendMessage = (event) => {
-    event.preventDefault()
+    event.preventDefault();
 
-    const message = {
-        userId: user.id,
-        userName: user.name,
-        userColor: user.color,
-        content: chatInput.value
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        const message = {
+            userId: user.id,
+            userName: user.name,
+            userColor: user.color,
+            content: chatInput.value,
+        };
+
+        websocket.send(JSON.stringify(message));
+
+        chatInput.value = "";
+    } else {
+        console.error("WebSocket connection is not open.");
     }
+};
 
-    websocket.send(JSON.stringify(message))
+const sairChat = () => {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.close();
+        websocket = null;
+        chatMessages.innerHTML = "";
+        console.log("Você saiu do chat.");
 
-    chatInput.value = ""
+        // Limpa o estado do usuário
+        user.id = "";
+        user.name = "";
+        user.color = "";
+
+        // Esconde a tela de chat e mostra a tela de login
+        chat.style.display = "none";
+        login.style.display = "flex";
+    }
+};
+
+if (sairChatButton) {
+    sairChatButton.addEventListener("click", sairChat);
 }
 
-loginForm.addEventListener("submit", handleLogin)
-chatForm.addEventListener("submit", sendMessage)
+loginForm.addEventListener("submit", handleLogin);
+chatForm.addEventListener("submit", sendMessage);
